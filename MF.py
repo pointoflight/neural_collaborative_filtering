@@ -12,8 +12,8 @@ import keras
 from keras import backend as K
 from keras import initializations
 from keras.models import Sequential, Model, load_model, save_model
-from keras.layers.core import Dense, Lambda, Activation
-from keras.layers import Embedding, Input, Dense, merge, Reshape, Merge, Flatten
+from keras.layers.core import Dense, Lambda, Activation, Merge
+from keras.layers import Embedding, Input, Dense, merge, Reshape, Flatten
 from keras.optimizers import Adagrad, Adam, SGD, RMSprop
 from keras.regularizers import l2
 from Dataset import Dataset
@@ -24,13 +24,13 @@ import sys
 import math
 import argparse
 
+from keras.activations import sigmoid
 import tensorflow as tf
 tf.python.control_flow_ops = tf
-from keras.activations import sigmoid
 
 #################### Arguments ####################
 def parse_args():
-    parser = argparse.ArgumentParser(description="Run GMF.")
+    parser = argparse.ArgumentParser(description="Run MF.")
     parser.add_argument('--path', nargs='?', default='Data/',
                         help='Input data path.')
     parser.add_argument('--dataset', nargs='?', default='ml-1m',
@@ -73,11 +73,12 @@ def get_model(num_users, num_items, latent_dim, regs=[0,0]):
     item_latent = Flatten()(MF_Embedding_Item(item_input))
     
     # Element-wise product of user and item embeddings 
-    predict_vector = merge([user_latent, item_latent], mode = 'mul')
+    predict_vector = merge([user_latent, item_latent], mode = 'dot')
     
     # Final prediction layer
-    # prediction = Lambda(lambda x: sigmoid(K.sum(x)), output_shape=((1,)))(predict_vector)
-    prediction = Dense(1, activation='sigmoid', init='lecun_uniform', name = 'prediction')(predict_vector)
+    prediction = Lambda(lambda x: sigmoid(x), output_shape=(1,))(predict_vector)
+    # prediction = Dense(1, activation='sigmoid', init='lecun_uniform', name = 'prediction')(predict_vector)
+    # prediction = Lambda(lambda x : sigmoid(x))(predict_vector)
     
     model = Model(input=[user_input, item_input], 
                 output=prediction)
