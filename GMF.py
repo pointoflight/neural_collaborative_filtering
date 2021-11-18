@@ -33,9 +33,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Run GMF.")
     parser.add_argument('--path', nargs='?', default='Data/',
                         help='Input data path.')
-    parser.add_argument('--dataset', nargs='?', default='ml-1m',
+    parser.add_argument('--dataset', nargs='?', default='1mml',
                         help='Choose a dataset.')
-    parser.add_argument('--epochs', type=int, default=100,
+    parser.add_argument('--epochs', type=int, default=2,
                         help='Number of epochs.')
     parser.add_argument('--batch_size', type=int, default=256,
                         help='Batch size.')
@@ -140,11 +140,11 @@ if __name__ == '__main__':
     
     # Init performance
     t1 = time()
-    (hits, ndcgs) = evaluate_model(model, testRatings, testNegatives, topK, evaluation_threads)
-    hr, ndcg = np.array(hits).mean(), np.array(ndcgs).mean()
+    (hits, ndcgs, metrix) = evaluate_model(model, testRatings, testNegatives, topK, evaluation_threads)
+    hr, ndcg, metric = np.array(hits).mean(), np.array(ndcgs).mean(), np.array(metrix).mean()
     #mf_embedding_norm = np.linalg.norm(model.get_layer('user_embedding').get_weights())+np.linalg.norm(model.get_layer('item_embedding').get_weights())
     #p_norm = np.linalg.norm(model.get_layer('prediction').get_weights()[0])
-    print('Init: HR = %.4f, NDCG = %.4f\t [%.1f s]' % (hr, ndcg, time()-t1))
+    print('Init: HR = %.4f, NDCG = %.4f, Metric = %.4f\t [%.1f s]' % (hr, ndcg, metric, time()-t1))
     
     # Train model
     best_hr, best_ndcg, best_iter = hr, ndcg, -1
@@ -161,10 +161,10 @@ if __name__ == '__main__':
         
         # Evaluation
         if epoch %verbose == 0:
-            (hits, ndcgs) = evaluate_model(model, testRatings, testNegatives, topK, evaluation_threads)
-            hr, ndcg, loss = np.array(hits).mean(), np.array(ndcgs).mean(), hist.history['loss'][0]
-            print('Iteration %d [%.1f s]: HR = %.4f, NDCG = %.4f, loss = %.4f [%.1f s]' 
-                  % (epoch,  t2-t1, hr, ndcg, loss, time()-t2))
+            (hits, ndcgs, metrix) = evaluate_model(model, testRatings, testNegatives, topK, evaluation_threads)
+            hr, ndcg, metric, loss = np.array(hits).mean(), np.array(ndcgs).mean(), np.array(metrix).mean(), hist.history['loss'][0]
+            print('Iteration %d [%.1f s]: HR = %.4f, NDCG = %.4f, Metric = %.4f, loss = %.4f [%.1f s]' 
+                  % (epoch,  t2-t1, hr, ndcg, metric, loss, time()-t2))
             if hr > best_hr:
                 best_hr, best_ndcg, best_iter = hr, ndcg, epoch
                 if args.out > 0:

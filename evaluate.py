@@ -35,26 +35,60 @@ def evaluate_model(model, testRatings, testNegatives, K, num_thread):
     _K = K
         
     hits, ndcgs = [],[]
-    if(num_thread > 1): # Multi-thread
-        pool = multiprocessing.Pool(processes=num_thread)
-        res = pool.map(eval_one_rating, range(len(_testRatings)))
-        pool.close()
-        pool.join()
-        hits = [r[0] for r in res]
-        ndcgs = [r[1] for r in res]
-        return (hits, ndcgs)
-    # Single thread
+    
+    prev_user = 0
+    cur = []
+    metrix = []
+
+    for i in range(len(_testRatings)):
+        user, item = _testRatings[i][0], _testRatings[i][1]
+        if user != prev_user:
+            metrix.append(eval_one_rating1(user, cur))
+            cur = []
+            prev_user = user
+        cur.append(item)
+    metrix.append(eval_one_rating1(user, cur))
+
     for idx in range(len(_testRatings)):
-        (hr,ndcg) = eval_one_rating(idx)
+        (hr,ndcg) = eval_one_rating(_testRatings[idx][0])
         hits.append(hr)
         ndcgs.append(ndcg)      
-    return (hits, ndcgs)
+    return (hits, ndcgs, metrix)
+
+def eval_one_rating1(idx, cur):
+
+    u = idx
+    # print("u idx", u, idx)
+    # assert(u == idx)
+    items = _testNegatives[idx]
+
+    gtItems = cur
+    items.extend(gtItems)
+
+    users = np.full(len(items), u, dtype = 'int32')
+    predictions = _model.predict([users, np.array(items)], batch_size=114, verbose=0)
+
+    map_item_score = {}
+
+    for i in range(len(items)):
+        item = items[i]
+        map_item_score[item] = predictions[i]
+    items.pop()
+
+    ranklist = heapq.nlargest(_K, map_item_score, key=map_item_score.get)
+    metx = getMetxRatio(ranklist, gtItems)
+    return metx
+
+def getMetxRatio(ranklist, gtItems):
+    return len(list(set(ranklist) & set(gtItems))) / len(gtItems)
 
 def eval_one_rating(idx):
     rating = _testRatings[idx]
     items = _testNegatives[idx]
+    
     # print("rating", rating)
     # print("items", items)
+
     u = rating[0]
     gtItem = rating[1]
     items.append(gtItem)

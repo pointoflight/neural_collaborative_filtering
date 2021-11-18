@@ -19,7 +19,7 @@ class Dataset(object):
         self.trainMatrix = self.load_rating_file_as_matrix(path + ".train.rating")
         self.testRatings = self.load_rating_file_as_list(path + ".test.rating")
         self.testNegatives = self.load_negative_file(path + ".test.negative")
-        assert len(self.testRatings) == len(self.testNegatives)
+        # assert len(self.testRatings) == len(self.testNegatives)
         
         self.num_users, self.num_items = self.trainMatrix.shape
         
@@ -59,8 +59,10 @@ class Dataset(object):
             while line != None and line != "":
                 arr = line.split("\t")
                 u, i = int(arr[0]), int(arr[1])
+                # print("hello", u, i)
                 num_users = max(num_users, u)
                 num_items = max(num_items, i)
+                # print(num_items, num_users)
                 line = f.readline()
         # Construct matrix
         mat = sp.dok_matrix((num_users+1, num_items+1), dtype=np.float32)
